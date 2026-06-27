@@ -108,8 +108,7 @@ export default function RepoInput() {
       )}
 
       <p className="text-xs ml-1 text-zinc-500 dark:text-zinc-400">
-        Public repos only. Generates embedding vectors for similarity search
-        (first index may take a minute).
+        Public repos only. 
       </p>
     </form>
   );
