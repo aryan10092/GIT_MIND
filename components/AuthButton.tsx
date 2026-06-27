@@ -8,6 +8,7 @@ export default function AuthButton() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  let url=process?.env?.NEXT_PUBLIC_VERCEL_URL
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
 
@@ -32,7 +33,7 @@ export default function AuthButton() {
     await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${url}/auth/callback`,
       },
     });
   }
