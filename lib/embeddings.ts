@@ -1,30 +1,8 @@
-export const EMBEDDING_MODEL = "Xenova/all-MiniLM-L6-v2";
+export const EMBEDDING_MODEL =
+  "sentence-transformers/all-MiniLM-L6-v2";
 export const EMBEDDING_DIMENSIONS = 384;
 
-type FeaturePipeline = (
-  text: string,
-  options?: { pooling?: string; normalize?: boolean },
-) => Promise<{ data: Float32Array }>;
-
-let embedder: FeaturePipeline | null = null;
-let embedderPromise: Promise<FeaturePipeline> | null = null;
-
-async function loadEmbedder(): Promise<FeaturePipeline> {
-  if (embedder) return embedder;
-
-  if (!embedderPromise) {
-    embedderPromise = (async () => {
-      const { pipeline } = await import("@xenova/transformers");
-      const pipe = await pipeline("feature-extraction", EMBEDDING_MODEL, {
-        quantized: true,
-      });
-      embedder = pipe as FeaturePipeline;
-      return embedder;
-    })();
-  }
-
-  return embedderPromise;
-}
+const HF_API_URL = `https://api-inference.huggingface.co/models/${EMBEDDING_MODEL}`;
 
 function truncateForEmbedding(text: string, maxChars = 2000) {
   if (text.length <= maxChars) return text;
@@ -35,26 +13,99 @@ export function formatChunkForEmbedding(path: string, content: string) {
   return truncateForEmbedding(`File: ${path}\n${content}`);
 }
 
-export async function embedText(text: string): Promise<number[]> {
-  const pipe = await loadEmbedder();
-  const output = await pipe(truncateForEmbedding(text), {
-    pooling: "mean",
-    normalize: true,
+export function isEmbeddingsAvailable() {
+  return Boolean(process.env.HUGGINGFACE_API_KEY);
+}
+
+function meanPool(values: number[][]): number[] {
+  const dims = values[0]?.length ?? 0;
+  const sums = new Array<number>(dims).fill(0);
+
+  for (const row of values) {
+    for (let i = 0; i < dims; i += 1) {
+      sums[i] += row[i] ?? 0;
+    }
+  }
+
+  return sums.map((value) => value / values.length);
+}
+
+function normalize(vector: number[]): number[] {
+  const magnitude = Math.sqrt(vector.reduce((sum, value) => sum + value * value, 0));
+
+  if (magnitude === 0) return vector;
+
+  return vector.map((value) => value / magnitude);
+}
+
+function parseEmbeddingResponse(payload: unknown): number[] | null {
+  if (!payload) return null;
+
+  if (Array.isArray(payload)) {
+    if (payload.length === 0) return null;
+
+    if (typeof payload[0] === "number") {
+      return normalize(payload as number[]);
+    }
+
+    if (Array.isArray(payload[0])) {
+      return normalize(meanPool(payload as number[][]));
+    }
+  }
+
+  return null;
+}
+
+export async function embedText(text: string): Promise<number[] | null> {
+  const apiKey = process.env.HUGGINGFACE_API_KEY;
+
+  if (!apiKey) {
+    return null;
+  }
+
+  const response = await fetch(HF_API_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ inputs: truncateForEmbedding(text) }),
   });
 
-  return Array.from(output.data);
+  if (!response.ok) {
+    return null;
+  }
+
+  const payload = (await response.json()) as unknown;
+  const vector = parseEmbeddingResponse(payload);
+
+  if (!vector || vector.length !== EMBEDDING_DIMENSIONS) {
+    return null;
+  }
+
+  return vector;
 }
 
 export async function embedTexts(
   texts: string[],
-  batchSize = 12,
-): Promise<number[][]> {
-  const results: number[][] = [];
+  batchSize = 8,
+): Promise<(number[] | null)[]> {
+  if (!isEmbeddingsAvailable()) {
+    return texts.map(() => null);
+  }
+
+  const results: (number[] | null)[] = [];
 
   for (let i = 0; i < texts.length; i += batchSize) {
     const batch = texts.slice(i, i + batchSize);
-    const vectors = await Promise.all(batch.map((text) => embedText(text)));
-    results.push(...vectors);
+
+    for (const text of batch) {
+      try {
+        results.push(await embedText(text));
+      } catch {
+        results.push(null);
+      }
+    }
   }
 
   return results;

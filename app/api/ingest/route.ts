@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
 import { chunkFiles } from "@/lib/chunker";
-import { embedTexts, formatChunkForEmbedding } from "@/lib/embeddings";
+import {
+  embedTexts,
+  formatChunkForEmbedding,
+  isEmbeddingsAvailable,
+} from "@/lib/embeddings";
 import { fetchPublicRepo } from "@/lib/github";
 import { parseRepoInput } from "@/lib/parse-repo-url";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { IngestResult } from "@/lib/types";
 
-export const maxDuration = 300;
+export const maxDuration = 60;
 
-const EMBED_BATCH_SIZE = 12;
+const EMBED_BATCH_SIZE = 8;
 const INSERT_BATCH_SIZE = 50;
 
 export async function POST(request: Request) {
@@ -92,21 +96,38 @@ export async function POST(request: Request) {
       repoId = inserted.id;
     }
 
+    const useEmbeddings = isEmbeddingsAvailable();
+
     for (let i = 0; i < chunks.length; i += EMBED_BATCH_SIZE) {
       const batch = chunks.slice(i, i + EMBED_BATCH_SIZE);
       const texts = batch.map((chunk) =>
         formatChunkForEmbedding(chunk.path, chunk.content),
       );
 
-      const embeddings = await embedTexts(texts, EMBED_BATCH_SIZE);
+      let embeddings: (number[] | null)[] = batch.map(() => null);
 
-      const rows = batch.map((chunk, index) => ({
-        repo_id: repoId,
-        path: chunk.path,
-        content: chunk.content,
-        chunk_index: chunk.chunkIndex,
-        embedding: embeddings[index],
-      }));
+      if (useEmbeddings) {
+        try {
+          embeddings = await embedTexts(texts, EMBED_BATCH_SIZE);
+        } catch {
+          embeddings = batch.map(() => null);
+        }
+      }
+
+      const rows = batch.map((chunk, index) => {
+        const row: Record<string, unknown> = {
+          repo_id: repoId,
+          path: chunk.path,
+          content: chunk.content,
+          chunk_index: chunk.chunkIndex,
+        };
+
+        if (embeddings[index]) {
+          row.embedding = embeddings[index];
+        }
+
+        return row;
+      });
 
       for (let j = 0; j < rows.length; j += INSERT_BATCH_SIZE) {
         const insertBatch = rows.slice(j, j + INSERT_BATCH_SIZE);

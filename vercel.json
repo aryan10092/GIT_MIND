@@ -1,0 +1,16 @@
+{
+  "functions": {
+    "app/api/ingest/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/chat/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/architecture/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/health/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}

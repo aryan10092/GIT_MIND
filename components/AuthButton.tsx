@@ -8,7 +8,6 @@ export default function AuthButton() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  let url=process?.env?.NEXT_PUBLIC_VERCEL_URL
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
 
@@ -29,11 +28,13 @@ export default function AuthButton() {
 
   async function signIn() {
     const supabase = createBrowserSupabaseClient();
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
 
     await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
-        redirectTo: `${url}/auth/callback`,
+        redirectTo: `${siteUrl}/auth/callback`,
       },
     });
   }

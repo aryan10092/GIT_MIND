@@ -1,4 +1,4 @@
-import { embedText, formatChunkForEmbedding } from "@/lib/embeddings";
+import { embedText, isEmbeddingsAvailable } from "@/lib/embeddings";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export type SearchResult = {
@@ -17,6 +17,16 @@ function sanitizeQuery(query: string) {
     .replace(/[^\w\s./-]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function getSearchTerms(query: string) {
+  const sanitized = sanitizeQuery(query);
+  const words = sanitized
+    .split(" ")
+    .filter((word) => word.length > 2)
+    .slice(0, 6);
+
+  return words.length > 0 ? words : sanitized ? [sanitized] : [];
 }
 
 function resultKey(result: Pick<SearchResult, "path" | "chunk_index">) {
@@ -72,9 +82,18 @@ async function searchByEmbedding(
   query: string,
   limit: number,
 ): Promise<SearchResult[]> {
+  if (!isEmbeddingsAvailable()) {
+    return [];
+  }
+
   try {
-    const supabase = getSupabaseAdmin();
     const queryEmbedding = await embedText(query);
+
+    if (!queryEmbedding) {
+      return [];
+    }
+
+    const supabase = getSupabaseAdmin();
 
     const { data, error } = await supabase.rpc("match_file_chunks", {
       p_repo_id: repoId,
@@ -82,7 +101,7 @@ async function searchByEmbedding(
       p_limit: limit,
       p_threshold: 0.25,
     });
-    console.log("embedding similarity",data)
+
     if (error || !data?.length) {
       return [];
     }
@@ -100,17 +119,56 @@ async function searchByEmbedding(
   }
 }
 
+async function searchByIlike(
+  repoId: string,
+  terms: string[],
+  limit: number,
+): Promise<SearchResult[]> {
+  if (terms.length === 0) {
+    return [];
+  }
+
+  const supabase = getSupabaseAdmin();
+  const seen = new Set<string>();
+  const results: SearchResult[] = [];
+
+  for (const term of terms) {
+    const pattern = `%${term.replace(/[%_]/g, "")}%`;
+
+    const { data } = await supabase
+      .from("file_chunks")
+      .select("id, path, content, chunk_index")
+      .eq("repo_id", repoId)
+      .or(`content.ilike.${pattern},path.ilike.${pattern}`)
+      .limit(limit);
+
+    for (const row of data ?? []) {
+      const key = resultKey(row);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      results.push({ ...row, source: "keyword" });
+      if (results.length >= limit) {
+        return results;
+      }
+    }
+  }
+
+  return results;
+}
+
 async function searchByKeywords(
   repoId: string,
   query: string,
   limit: number,
 ): Promise<SearchResult[]> {
-  const supabase = getSupabaseAdmin();
   const sanitized = sanitizeQuery(query);
+  const terms = getSearchTerms(query);
 
   if (!sanitized) {
     return [];
   }
+
+  const supabase = getSupabaseAdmin();
 
   const { data, error } = await supabase.rpc("search_file_chunks", {
     p_repo_id: repoId,
@@ -125,21 +183,7 @@ async function searchByKeywords(
     }));
   }
 
-  const pattern = `%${sanitized.replace(/[%_]/g, "")}%`;
-
-  const { data: fallback } = await supabase
-    .from("file_chunks")
-    .select("id, path, content, chunk_index")
-    .eq("repo_id", repoId)
-    .or(`content.ilike.${pattern},path.ilike.${pattern}`)
-    .limit(limit);
-
-  return (
-    (fallback as SearchResult[] | null)?.map((row) => ({
-      ...row,
-      source: "keyword" as const,
-    })) ?? []
-  );
+  return searchByIlike(repoId, terms, limit);
 }
 
 export async function searchFileChunks(
@@ -169,4 +213,4 @@ export async function searchFileChunks(
   return mergeSearchResults(vectorResults, keywordResults, limit);
 }
 
-export { formatChunkForEmbedding };
+export { formatChunkForEmbedding } from "@/lib/embeddings";
