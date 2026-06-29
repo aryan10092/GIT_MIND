@@ -39,7 +39,7 @@
 ## 🚀 How It Works
 
 1. Sign in with GitHub.
-2. Connect any public or private repository.
+2. Connect your public repository.
 3. GitMind indexes and embeds the repository.
 4. Ask questions about the codebase using natural language.
 5. Explore architecture, repository insights, and AI-generated developer analytics.
