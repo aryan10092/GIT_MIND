@@ -8,6 +8,7 @@ export type ChatMessage = {
 export const SUGGESTED_QUESTIONS = [
   "What is this project about?",
   "How is the project structured?",
-  "Whate are the api endpoints",
+  "What are the api endpoints used",
+
   "How do I run this project?",
 ];

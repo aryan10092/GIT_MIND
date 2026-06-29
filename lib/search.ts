@@ -118,14 +118,13 @@ async function searchByKeywords(
   limit: number,
 ): Promise<SearchResult[]> {
   const sanitized = sanitizeQuery(query);
- 
+
 
   if (!sanitized) {
     return [];
   }
-
-  const supabase = getSupabaseAdmin();
-
+  const supabase = getSupabaseAdmin()
+  
   const { data, error } = await supabase.rpc("search_file_chunks", {
     p_repo_id: repoId,
     p_query: sanitized,
