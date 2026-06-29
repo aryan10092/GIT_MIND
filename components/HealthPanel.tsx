@@ -92,7 +92,7 @@ export default function HealthPanel({
           <h2 className="mb-4 text-sm font-medium uppercase tracking-wide text-zinc-500">
             Checks
           </h2>
-          <ul className="grid grid-cols-2 gap-5">
+          <ul className="grid sm:grid-cols-2 gap-5">
             {health.checks.map((check) => (
               <li
                 key={check.label}

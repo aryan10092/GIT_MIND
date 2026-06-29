@@ -56,15 +56,6 @@ export default function UserRepos() {
     return null;
   }
 
-  if (!user) {
-    return (
-      <div className="mt-12 w-full max-w-xl rounded-2xl border border-dashed border-zinc-300 bg-white p-6 text-center dark:border-zinc-700 dark:bg-zinc-950">
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Sign in with GitHub to save and revisit your indexed repositories.
-        </p>
-      </div>
-    );
-  }
 
   if (repos.length === 0) {
     return (
