@@ -302,9 +302,9 @@ export default function DeveloperInsightsClient() {
 
   return (
     <div className="space-y-8 ">
-      <div className="flex justify-between items-center max-wxl mx-4">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-6 sm:gap-0 mx-4">
       <div className="max-w-2xl">
-        <h1 className="text-3xl font-semibold tracking-tight">Developer Insights</h1>
+        <h1 className="text-2xl sm:text-3xl sm:font-semibold tracking-tight">Developer Insights</h1>
         <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
           Analyze a public GitHub profile and recent repositories. 
         </p>
