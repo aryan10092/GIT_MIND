@@ -11,6 +11,9 @@
     },
     "app/api/health/route.ts": {
       "maxDuration": 60
+    },
+    "app/api/insights/route.ts": {
+      "maxDuration": 60
     }
   }
 }

@@ -30,6 +30,11 @@ export default function AppHeader({
           {/* <span className="hidden rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 sm:inline">
             {badge}
           </span> */}
+          <button type="button" className="border border-zinc-200 rounded-lg px-3 py-1.5 text-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900"> 
+            <Link href="/insights" className="text-sm text-">
+            Developer Insights
+            </Link>
+        </button>
           <AuthButton />
         </div>
       </div>

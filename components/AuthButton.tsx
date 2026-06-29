@@ -60,9 +60,9 @@ export default function AuthButton() {
 
     return (
       <div className="flex items-center gap-3">
-        <span className="hidden rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 sm:inline">
+        {/* <span className="hidden rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 sm:inline">
             {name}
-          </span>
+          </span> */}
         <button
           type="button"
           onClick={() => void signOut()}
@@ -80,7 +80,7 @@ export default function AuthButton() {
       onClick={() => void signIn()}
       className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
     >
-      Sign in with GitHub
+      Sign in
     </button>
   );
 }
