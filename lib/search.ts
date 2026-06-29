@@ -19,15 +19,6 @@ function sanitizeQuery(query: string) {
     .trim();
 }
 
-function getSearchTerms(query: string) {
-  const sanitized = sanitizeQuery(query);
-  const words = sanitized
-    .split(" ")
-    .filter((word) => word.length > 2)
-    .slice(0, 6);
-
-  return words.length > 0 ? words : sanitized ? [sanitized] : [];
-}
 
 function resultKey(result: Pick<SearchResult, "path" | "chunk_index">) {
   return `${result.path}:${result.chunk_index}`;
@@ -119,42 +110,7 @@ async function searchByEmbedding(
   }
 }
 
-async function searchByIlike(
-  repoId: string,
-  terms: string[],
-  limit: number,
-): Promise<SearchResult[]> {
-  if (terms.length === 0) {
-    return [];
-  }
 
-  const supabase = getSupabaseAdmin();
-  const seen = new Set<string>();
-  const results: SearchResult[] = [];
-
-  for (const term of terms) {
-    const pattern = `%${term.replace(/[%_]/g, "")}%`;
-
-    const { data } = await supabase
-      .from("file_chunks")
-      .select("id, path, content, chunk_index")
-      .eq("repo_id", repoId)
-      .or(`content.ilike.${pattern},path.ilike.${pattern}`)
-      .limit(limit);
-
-    for (const row of data ?? []) {
-      const key = resultKey(row);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      results.push({ ...row, source: "keyword" });
-      if (results.length >= limit) {
-        return results;
-      }
-    }
-  }
-
-  return results;
-}
 
 async function searchByKeywords(
   repoId: string,
@@ -162,7 +118,7 @@ async function searchByKeywords(
   limit: number,
 ): Promise<SearchResult[]> {
   const sanitized = sanitizeQuery(query);
-  const terms = getSearchTerms(query);
+ 
 
   if (!sanitized) {
     return [];
@@ -176,14 +132,11 @@ async function searchByKeywords(
     p_limit: limit,
   });
 
-  if (!error && data?.length) {
     return (data as SearchResult[]).map((row) => ({
       ...row,
       source: "keyword" as const,
     }));
-  }
-
-  return searchByIlike(repoId, terms, limit);
+  
 }
 
 export async function searchFileChunks(
