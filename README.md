@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GitMind
 
-## Getting Started
+**GitMind** is an AI-powered GitHub repository analysis platform that helps developers understand any codebase in minutes. Simply connect a GitHub repository and explore its architecture, chat with the code using RAG (Retrieval-Augmented Generation), and gain actionable insights about the repository and its developer profile.
 
-First, run the development server:
+## ✨ Features
+
+* 🤖 AI-powered RAG chatbot for repository Q&A
+* 🏗️ Automatic repository architecture visualization
+* 📊 Repository health and quality score
+* 📁 Codebase indexing with semantic search
+* 🔍 Repository structure and dependency analysis
+* 👨‍💻 AI Developer Insights with GitHub profile analysis
+* 📈 Latest repository activity and contribution overview
+* 🔐 GitHub OAuth authentication
+* ⚡ Fast semantic search using embeddings and vector search
+
+## 🛠️ Tech Stack
+
+**Frontend**
+
+* Next.js
+* TypeScript
+* Tailwind CSS
+* ShadCN UI
+
+**Backend**
+
+* Node.js
+* Supabase
+* PostgreSQL + pgvector
+
+**AI**
+
+* Groq LLM
+* RAG Pipeline
+* Embeddings
+* GitHub API
+
+## 🚀 How It Works
+
+1. Sign in with GitHub.
+2. Connect any public or private repository.
+3. GitMind indexes and embeds the repository.
+4. Ask questions about the codebase using natural language.
+5. Explore architecture, repository insights, and AI-generated developer analytics.
+
+## 📸 Features
+
+* AI Repository Chat
+* Repository Architecture Visualization
+* Repository Health Score
+* AI Developer Insights
+* Semantic Code Search
+* GitHub Repository Analysis
+
+## Installation
 
 ```bash
+git clone https://github.com/aryan10092/GIT_MIND.git
+
+cd GIT_MIND
+
+npm install
+
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Create a `.env.local` file and configure:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+* GitHub OAuth
+* Supabase
+* Database
+* Groq API Key
+* Embedding Provider
 
-## Learn More
+## Future Improvements
 
-To learn more about Next.js, take a look at the following resources:
+* Pull Request AI Review
+* Security Scanner
+* AI Test Case Generator
+* Interactive Dependency Graph
+* Code Flow Visualization
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+MIT License.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
