@@ -14,7 +14,54 @@ export function formatChunkForEmbedding(path: string, content: string) {
 }
 
 export function isEmbeddingsAvailable() {
-  return Boolean(process.env.HUGGINGFACE_API_KEY);
+  return true;
+}
+
+function shouldUseHuggingFaceEmbeddings() {
+  return Boolean(
+    process.env.HUGGINGFACE_API_KEY && process.env.USE_HUGGINGFACE_EMBEDDINGS === "true",
+  );
+}
+
+function hashToken(token: string) {
+  let hash = 2166136261;
+
+  for (let i = 0; i < token.length; i += 1) {
+    hash ^= token.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return hash >>> 0;
+}
+
+function createLocalEmbedding(text: string): number[] {
+  const vector = new Array<number>(EMBEDDING_DIMENSIONS).fill(0);
+  const normalized = text.toLowerCase();
+  const tokens = normalized.match(/[a-z0-9_./-]+/g) ?? [];
+
+  for (const token of tokens) {
+    const baseHash = hashToken(token);
+    vector[baseHash % EMBEDDING_DIMENSIONS] += 1;
+
+    for (let n = 2; n <= 4; n += 1) {
+      if (token.length < n) continue;
+
+      for (let i = 0; i <= token.length - n; i += 1) {
+        const gram = token.slice(i, i + n);
+        const gramHash = hashToken(`${n}:${gram}`);
+        vector[gramHash % EMBEDDING_DIMENSIONS] += 0.5;
+      }
+    }
+  }
+
+  if (tokens.length === 0) {
+    for (let i = 0; i < normalized.length; i += 1) {
+      const charCode = normalized.charCodeAt(i);
+      vector[(charCode + i) % EMBEDDING_DIMENSIONS] += 0.25;
+    }
+  }
+
+  return normalize(vector);
 }
 
 function meanPool(values: number[][]): number[] {
@@ -57,30 +104,39 @@ function parseEmbeddingResponse(payload: unknown): number[] | null {
 }
 
 export async function embedText(text: string): Promise<number[] | null> {
-  const apiKey = process.env.HUGGINGFACE_API_KEY;
-
-  if (!apiKey) {
-    return null;
+  if (!shouldUseHuggingFaceEmbeddings()) {
+    return createLocalEmbedding(text);
   }
 
-  const response = await fetch(HF_API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ inputs: truncateForEmbedding(text) }),
-  });
+  const apiKey = process.env.HUGGINGFACE_API_KEY;
+
+  let response: Response;
+  try {
+    response = await fetch(HF_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ inputs: truncateForEmbedding(text) }),
+    });
+  } catch {
+    return createLocalEmbedding(text);
+  }
 
   if (!response.ok) {
-    return null;
+    return createLocalEmbedding(text);
   }
 
   const payload = (await response.json()) as unknown;
   const vector = parseEmbeddingResponse(payload);
 
-  if (!vector || vector.length !== EMBEDDING_DIMENSIONS) {
-    return null;
+  if (!vector) {
+    return createLocalEmbedding(text);
+  }
+
+  if (vector.length !== EMBEDDING_DIMENSIONS) {
+    return createLocalEmbedding(text);
   }
 
   return vector;
@@ -90,10 +146,6 @@ export async function embedTexts(
   texts: string[],
   batchSize = 8,
 ): Promise<(number[] | null)[]> {
-  if (!isEmbeddingsAvailable()) {
-    return texts.map(() => null);
-  }
-
   const results: (number[] | null)[] = [];
 
   for (let i = 0; i < texts.length; i += batchSize) {
