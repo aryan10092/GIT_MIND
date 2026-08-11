@@ -66,6 +66,7 @@ export async function POST(request: Request) {
     }
 
     const chunks = await searchFileChunks(repoId, lastUserMessage.content);
+      console.log("checkinggggggg",chunks);
     const sources = getUniqueSources(chunks);
     const context = buildContext(chunks);
     const searchMode = chunks.some((chunk) => chunk.source === "vector" || chunk.source === "hybrid")
