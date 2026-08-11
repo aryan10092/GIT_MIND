@@ -40,7 +40,7 @@ export default function UserRepos() {
       setRepos((data as Repo[] | null) ?? []);
       setLoading(false);
     }
-
+   console.log("userreposs",data)
     void load();
 
     const {
