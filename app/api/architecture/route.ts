@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     const prompt = formatArchitecturePrompt(repo.owner, repo.name, context);
 
     const { text } = await generateText({
-      model: groq("llama-3.1-8b-instant"),
+      model: groq("openai/gpt-oss-20b"),
       system: `You analyze GitHub repositories. Return ONLY valid JSON with this shape:
 {
   "summary": "2-4 short paragraphs in markdown describing stack, structure, and main components",
