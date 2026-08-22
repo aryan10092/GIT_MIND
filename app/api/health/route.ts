@@ -119,7 +119,7 @@ export async function POST(request: Request) {
     const failedChecks = health.checks.filter((check) => !check.passed);
 
     const { text: suggestions } = await generateText({
-      model: groq("llama-3.1-8b-instant"),
+      model: groq("openai/gpt-oss-20b"),
       system:
         "You are a helpful engineering advisor. Give exactly 3 short, actionable improvements as a numbered markdown list. Be specific and practical.",
       prompt: `Repository: ${repo.owner}/${repo.name}
