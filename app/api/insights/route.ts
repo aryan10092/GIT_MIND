@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     const { score, breakdown } = computeDeveloperScore(profile, repos);
 
     const { text } = await generateText({
-      model: groq("llama-3.1-8b-instant"),
+      model: groq("openai/gpt-oss-20b"),
       system: `You analyze public GitHub developer profiles. Return ONLY valid JSON:
 {
   "strengths": ["3-5 short bullets based only on provided data"],
